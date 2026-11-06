@@ -17,11 +17,12 @@ This repository is an index for a small, self-hosted toolchain. The components a
 
 | Project | What it does | Use it when |
 |---|---|---|
+| **[lark-channel-bridge](https://github.com/zarazhangrui/lark-coding-agent-bridge)** (upstream) | Chat front end: bridges Feishu messages and streaming cards to a local Claude Code or Codex process, with sessions, tool progress, and group/topic support. | You want to talk to the agent in Feishu instead of a terminal. |
 | **[cc-session](https://github.com/zzszmyf/cc-session)** | Runs interactive Claude Code sessions inside tmux, with attach/detach, `send`, logs, and an optional `ttyd` web terminal. | You want a long-running agent that survives SSH disconnects, or you want to check on it from a phone. |
 | **[feishu-agent-scheduler](https://github.com/zzszmyf/feishu-agent-scheduler)** | Cron for coding agents: systemd user timers run `claude -p` in a workspace and push the result to Feishu with `lark-cli`. | You want a daily health check, report, or other non-interactive agent job delivered as a chat message. |
 | **[pi-managed-agents](https://github.com/zzszmyf/pi-managed-agents)** | Reference implementation for managed agent sessions: harness, sandbox lifecycle, routines runner, and a Claude-compatible bridge adapter. | You are building a multi-session or multi-tenant agent service rather than driving a single local CLI. |
 
-The chat front end in this setup is **[lark-channel-bridge](https://github.com/zarazhangrui/lark-coding-agent-bridge)** (third-party, MIT). It bridges Feishu messages and streaming cards to a local Claude Code or Codex process. It is not part of this index and is maintained upstream.
+`lark-channel-bridge` is a third-party MIT project maintained upstream. It is included here because it is the chat entry point most users pair with the rest of the stack. The stack author also maintains a fork with a fix for progress streams that stall at completion; the upstream PR is [#347](https://github.com/zarazhangrui/lark-coding-agent-bridge/pull/347).
 
 ## Architecture
 
@@ -29,14 +30,14 @@ The chat front end in this setup is **[lark-channel-bridge](https://github.com/z
 Feishu / Lark
    │  messages, mentions, streaming cards
    ▼
-lark-channel-bridge  (optional chat front end, third-party)
+lark-channel-bridge  (chat front end, third-party, MIT)
    │
    ├── cc-session ............ interactive tmux sessions (+ ttyd for mobile)
    ├── feishu-agent-scheduler  systemd timer → claude -p → lark-cli push
    └── pi-managed-agents ..... programmatic sessions, sandboxes, routines
 ```
 
-The three projects do not call each other. They solve different layers of the same problem, and you can mix them with any other transport or runner.
+The four projects do not call each other. They solve different layers of the same problem, and you can mix them with any other transport or runner.
 
 ## Which one do I need?
 
@@ -56,7 +57,16 @@ The three projects do not call each other. They solve different layers of the sa
 
 ## Quick start
 
-### 1. An interactive session that survives disconnects
+### 1. Talk to an agent in Feishu
+
+```bash
+npm i -g lark-channel-bridge
+lark-channel-bridge run
+```
+
+The first run prints a QR code: scan it with Feishu/Lark, create or pick the bot app, and choose Claude Code or Codex. Once messaging works, stop the foreground process and run `lark-channel-bridge start` to install the background service. See the [upstream README](https://github.com/zarazhangrui/lark-coding-agent-bridge) for profiles, groups, and configuration.
+
+### 2. An interactive session that survives disconnects
 
 ```bash
 git clone https://github.com/zzszmyf/cc-session.git
@@ -67,7 +77,7 @@ cc-session attach my-task      # Ctrl-b d to detach; the agent keeps running
 cc-session send my-task "continue"
 ```
 
-### 2. A scheduled job that reports to Feishu
+### 3. A scheduled job that reports to Feishu
 
 ```bash
 git clone https://github.com/zzszmyf/feishu-agent-scheduler.git
@@ -84,7 +94,7 @@ feishu-agent-schedule add daily-health \
 
 Normal runs can return `[SILENT]` to suppress the push; failures are delivered with the job log.
 
-### 3. Managed sessions and sandboxes
+### 4. Managed sessions and sandboxes
 
 See [`pi-managed-agents`](https://github.com/zzszmyf/pi-managed-agents) for the session store, harness abstraction, sandbox lifecycle, and routines runner.
 
